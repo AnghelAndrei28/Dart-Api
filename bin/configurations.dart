@@ -1,12 +1,12 @@
 class Configurations{
   static const firebaseConfig = {
-    'apiKey': "AIzaSyC4OkgLX3cTadj8mjLllAzd7lxNYxHgDBI",
-    'authDomain': "dart-api-fd5db.firebaseapp.com",
-    'projectId': "dart-api-fd5db",
-    'storageBucket': "dart-api-fd5db.appspot.com",
-    'messagingSenderId': "842003879550",
-    'appId': "1:842003879550:web:6d9053702ea62f07546a2f"
+    'apiKey': "AIzaSyCx_KrL6kVPgdbz3z4xrIf2g5iODnUrpQg",
+    'authDomain': "findmypetv2.firebaseapp.com",
+    'projectId': "findmypetv2",
+    'storageBucket': "findmypetv2.appspot.com",
+    'messagingSenderId': "670295050211",
+    'appId': "1:670295050211:web:9f6f78ecdef9ea9af782d6"
   };
 
-  static const databaseUrl = 'https://dart-api-fd5db-default-rtdb.europe-west1.firebasedatabase.app/';
+  static const databaseUrl = 'https://findmypetv2-default-rtdb.firebaseio.com/';
 }
