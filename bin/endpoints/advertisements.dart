@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:firebase_dart/core.dart';
 import 'package:firebase_dart/database.dart';
@@ -39,7 +40,8 @@ class Advertisements {
       final animal = Animal.fromJson(payload['animal']);
       final state = payload['state']; //pierdut gasit
       final uid = payload['id_user'];
-
+      final positionLat = payload['positionLat'];
+      final positionLong = payload['positionLong'];
       if (animal == null) {
         return Response.notFound(
             jsonEncode({'success': false, 'error': 'Missing animal data'}),
@@ -47,11 +49,19 @@ class Advertisements {
       } else if (uid == null) {
         return Response.notFound(
             jsonEncode({'success':false, 'error': 'Missing id_user'}),
-                headers: {'Content-Type': 'application/json'});
+            headers: {'Content-Type': 'application/json'});
       } else if (state == null) {
         return Response.notFound(
             jsonEncode({'success':false, 'error': 'Missing state'}),
-                headers: {'Content-Type': 'application/json'});
+            headers: {'Content-Type': 'application/json'});
+      } else if (positionLat == null) {
+        return Response.notFound(
+            jsonEncode({'success':false, 'error': 'Missing Lat'}),
+            headers: {'Content-Type': 'application/json'});
+      } else if(positionLong == null ) {
+        return Response.notFound(
+            jsonEncode({'success':false, 'error': 'Missing Long'}),
+            headers: {'Content-Type': 'application/json'});
       }
 
       try {
@@ -66,7 +76,6 @@ class Advertisements {
           "rasa": animal.rasa,
           "description": animal.description,
           "photoUrl": animal.photoUrl,
-          "location": animal.location,
           "found": animal.found
         });
 
@@ -76,7 +85,9 @@ class Advertisements {
           "id_animal": newPostKey,
           "id_user": uid,
           "created_at": DateTime.now().toString(),
-          "state": state
+          "state": state,
+          "positionLat": positionLat,
+          "positionLong": positionLong
         });
 
         return Response.ok(jsonEncode({'success': true}),
@@ -91,6 +102,31 @@ class Advertisements {
     router.get('/get/<state>', (Request request, String state) async {
       var app = await initApp();
 
+      final requestData = await request.readAsString();
+      if (requestData.isEmpty) {
+        return Response.notFound(
+            jsonEncode({'success': false, 'error': 'No data found'}),
+            headers: {'Content-Type': 'application/json'});
+      }
+
+      final payload = jsonDecode(requestData);
+
+      var distance = payload['distance'];
+      final positionLat = payload['positionLat'];
+      final positionLong = payload['positionLong'];
+
+      if (positionLat == null) {
+        return Response.notFound(
+            jsonEncode({'success': false, 'error': 'Missing positionLat'}),
+            headers: {'Content-Type': 'application/json'});
+      } else if (positionLong == null) {
+        return Response.notFound(
+            jsonEncode({'success':false, 'error': 'Missing positionLong'}),
+            headers: {'Content-Type': 'application/json'});
+      } else {
+        distance ??= 50;
+      }
+
       final db =
       FirebaseDatabase(app: app, databaseURL: Configurations.databaseUrl);
       final ref = db.reference().child("advertisements");
@@ -101,7 +137,14 @@ class Advertisements {
           array.forEach((key, value) {
             if(value['state'] == state) {
               Advertisement advertisement = Advertisement.fromJson(value, key);
-              responseData.add(advertisement);
+                final advertismentPositionLat = advertisement.positionLat;
+                final advertismentPositionLong= advertisement.positionLong;
+                final distanceToAdvertisment = calculateDistance(
+                    positionLat, positionLong, advertismentPositionLat, advertismentPositionLong
+                );
+                if (distanceToAdvertisment <= distance) {
+                  responseData.add(advertisement);
+                }
             }
           });
         }
@@ -112,4 +155,24 @@ class Advertisements {
     });
     return router;
   }
+}
+double calculateDistance(
+    double lat1, double lon1, double lat2, double lon2
+    ) {
+  const int earthRadius = 6371; // in kilometers
+  double dLat = _toRadians(lat2 - lat1);
+  double dLon = _toRadians(lon2 - lon1);
+
+  double a = sin(dLat / 2) * sin(dLat / 2) +
+      cos(_toRadians(lat1)) * cos(_toRadians(lat2)) *
+          sin(dLon / 2) * sin(dLon / 2);
+
+  double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+  double distance = earthRadius * c;
+
+  return distance;
+}
+
+double _toRadians(double degrees) {
+  return degrees * pi / 180;
 }
